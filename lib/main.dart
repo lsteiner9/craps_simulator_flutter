@@ -1,10 +1,14 @@
+import 'package:craps_simulator_flutter/model/craps.dart';
+import 'package:craps_simulator_flutter/viewmodel/main_view_model.dart';
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const MyApp()); // invoking the constructor of MyApp (due to the parens)
+  runApp(
+      const MyApp()); // invoking the constructor of MyApp (due to the parens)
 }
 
-class MyApp extends StatelessWidget { // StatelessWidget - the code that
+class MyApp extends StatelessWidget {
+  // StatelessWidget - the code that
   // creates a view object that doesn't need to be updated as the state changes
   const MyApp({Key? key}) : super(key: key); // no new keyword; also, this
   // immediately invokes the superclass constructor
@@ -15,12 +19,15 @@ class MyApp extends StatelessWidget { // StatelessWidget - the code that
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo', // passing in arguments by name - paramName: arg
-      theme: ThemeData( // how to create the theme
+      title: 'Flutter Demo',
+      // passing in arguments by name - paramName: arg
+      theme: ThemeData(
+        // how to create the theme
         primarySwatch: Colors.deepPurple, //can leave a comma after the last
         // arg, don't need it though
       ),
-      home: const MyHomePage(title: 'Craps Simulator'),// these params
+      home: const MyHomePage(title: 'Craps Simulator'),
+      // these params
       // can be in any order, because we refer to them by name (must incl. names)
       debugShowCheckedModeBanner: false, //gets rid of the debug banner
     );
@@ -29,6 +36,7 @@ class MyApp extends StatelessWidget { // StatelessWidget - the code that
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key, required this.title}) : super(key: key);
+
   // required this.title means that a field of the class is created called title that is required in the constructor
 
   // This widget is the home page of your application. It is stateful, meaning
@@ -44,45 +52,37 @@ class MyHomePage extends StatefulWidget {
 
   @override
   State<MyHomePage> createState() => _MyHomePageState(); //lambda or anonymous
-  // method, since it's only one line (called expression lambda in java)
+// method, since it's only one line (called expression lambda in java)
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
   bool _running = false;
-
-  void _incrementCounter() {
-    setState(() { // another anonymous method/lambda
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+  MainViewModel _viewModel = MainViewModel();
 
   void _toggleRunning() {
     setState(() => _running = !_running);
+    _viewModel.toggleRunning();
   }
 
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
-    return Scaffold( //this is a widget
+    return Scaffold(
+      //this is a widget
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title), //the MyHomePage widget title
         actions: <Widget>[
-          if (!_running) IconButton(
-            icon: const Icon(
-              Icons.replay,
-              color: Colors.white,
+          if (!_running)
+            IconButton(
+              icon: const Icon(
+                Icons.replay,
+                color: Colors.white,
+              ),
+              onPressed: _viewModel.reset,
             ),
-            onPressed: () => {},
-          ),
           IconButton(
             icon: _running
                 ? const Icon(Icons.pause)
@@ -110,23 +110,28 @@ class _MyHomePageState extends State<MyHomePage> {
           // axis because Columns are vertical (the cross axis would be
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[ // this is a array of Widgets (generic, because
+          children: <Widget>[
+            // this is a array/list of Widgets (generic, because
             // many different kinds) that become the children of the column
-            const Text( //constant from compile-time
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter', //string interpolation- takes value of counter and makes it the text
-              style: Theme.of(context).textTheme.headline4, //material design distinctions for headlines
+            StreamBuilder<Snapshot>(
+              stream: _viewModel.snapshotStream,
+              builder: (context, event) {
+                if (event.hasData) {
+                  Snapshot snapshot = event.data as Snapshot;
+                  int rounds = snapshot.wins + snapshot.losses;
+                  double percentage =
+                      (rounds > 0) ? (100.0 * snapshot.wins / rounds) : 0;
+                  return Text(
+                      '${snapshot.wins} wins / $rounds rounds = $percentage%'
+                  );
+                } else {
+                  return const Text('No data');
+                }
+              },
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton( //another widget - this one is stateless
-        onPressed: _incrementCounter, //basically a method reference lambda
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }

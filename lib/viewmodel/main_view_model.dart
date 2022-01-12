@@ -6,6 +6,9 @@ import 'package:craps_simulator_flutter/model/craps.dart';
 
 class MainViewModel {
   final StreamController<Snapshot> _snapshotStreamController;
+  final ReceivePort _receivePort;
+  late final SendPort _sendPort;
+  late final Isolate _simulator;
 
   bool _running;
 
@@ -17,8 +20,34 @@ class MainViewModel {
   // in constructors, assign fields before the braces
   MainViewModel()
       : _snapshotStreamController = StreamController<Snapshot>(),
+        _receivePort = ReceivePort(),
         _running = false {
+    _receivePort.listen((message) {
+      if (message is SendPort) {
+        _sendPort = message;
+      } else {
+        _snapshotStreamController.add(message as Snapshot);
+        _checkAndSimulate();
+      }
+    });
+    Isolate
+        .spawn(_startSimulation, _receivePort.sendPort)
+        .then((isolate) => _simulator = isolate);
+  }
 
+  void _checkAndSimulate() {
+    if (_running) {
+      _sendPort.send({'simulate' : 10000});
+    }
+  }
+
+  void toggleRunning() {
+    _running = !_running;
+    _checkAndSimulate();
+  }
+
+  void reset() {
+    _sendPort.send({'init' : null});
   }
 
   // this is all the world of the isolate (which runs in a different thread)
@@ -33,14 +62,13 @@ class MainViewModel {
 
     // in dart we can put methods inside of methods
     void sendSnapshot(Snapshot snapshot) {
-      // this is sending a map - giving a key along with the data
-      sendPort.send({'snapshot' : snapshot});
+      sendPort.send(snapshot);
     }
 
     ReceivePort receivePort = ReceivePort();
 
     receivePort.listen((message) {
-      final map = message as Map<String, Object>;
+      final map = message as Map<String, dynamic>;
       if (map.containsKey('init')) {
         wins = 0;
         losses = 0;
@@ -59,5 +87,6 @@ class MainViewModel {
         sendSnapshot(Snapshot(wins, losses, round));
       }
     });
+    sendPort.send(receivePort.sendPort);
   }
 }
