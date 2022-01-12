@@ -62,6 +62,10 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void _toggleRunning() {
+    setState(() => _running = !_running);
+  }
+
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -83,7 +87,7 @@ class _MyHomePageState extends State<MyHomePage> {
             icon: _running
                 ? const Icon(Icons.pause)
                 : const Icon(Icons.play_arrow),
-            onPressed: () => setState(() => _running = !_running),
+            onPressed: _toggleRunning, //method reference
           ),
         ],
       ),
